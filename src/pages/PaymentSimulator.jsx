@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, AlertCircle, Shield, Loader2, CheckCircle } from 'lucide-react';
+import API_URL from '../config/api';
 
 const PaymentSimulator = () => {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ const PaymentSimulator = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Actualizar directamente la suscripción
-      const upgradeResponse = await fetch('http://localhost:3001/api/subscription/upgrade', {
+      const upgradeResponse = await fetch(`${API_URL}/subscription/upgrade`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
