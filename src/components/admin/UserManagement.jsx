@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Edit2, Trash2, CheckCircle, XCircle, Shield, UserCheck, User } from 'lucide-react';
+import API_URL from '../config/api';
 
 const UserManagement = ({ token }) => {
   const [users, setUsers] = useState([]);
@@ -15,7 +16,7 @@ const UserManagement = ({ token }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/users', {
+      const response = await fetch(`${API_URL}/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -36,7 +37,7 @@ const UserManagement = ({ token }) => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:3001/api/users', {
+      const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +61,7 @@ const UserManagement = ({ token }) => {
 
   const handleToggleActive = async (user) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${user.id}`, {
+      const response = await fetch(`${API_URL}/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +81,7 @@ const UserManagement = ({ token }) => {
   const handleDeleteUser = async (userId) => {
     if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
+      const response = await fetch(`${API_URL}/users/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

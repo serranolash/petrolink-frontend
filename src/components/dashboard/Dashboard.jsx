@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, CheckCircle, XCircle, FileText, RefreshCw, Calendar, TrendingUp, Camera, PenTool, MapPin, Image, Clock, UserCheck, UserX } from 'lucide-react';
 import SignaturePad from '../common/SignaturePad';
+import API_URL from '../config/api';
 
 const Dashboard = ({ token, userRole }) => {
   const [stats, setStats] = useState(null);
@@ -20,7 +21,7 @@ const Dashboard = ({ token, userRole }) => {
     
     setLoading(true);
     try {
-      const statsResponse = await fetch('http://localhost:3001/api/dashboard/stats', {
+      const statsResponse = await fetch(`${API_URL}/dashboard/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const statsData = await statsResponse.json();
@@ -28,7 +29,7 @@ const Dashboard = ({ token, userRole }) => {
         setStats(statsData.data);
       }
 
-      const permitsResponse = await fetch('http://localhost:3001/api/permits', {
+      const permitsResponse = await fetch(`${API_URL}/permits`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const permitsData = await permitsResponse.json();
@@ -56,7 +57,7 @@ const Dashboard = ({ token, userRole }) => {
     
     setProcessingAction(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/permits/${selectedPermitForAction}/approve`, {
+      const response = await fetch(`${API_URL}/permits/${selectedPermitForAction}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +99,7 @@ const Dashboard = ({ token, userRole }) => {
     
     setProcessingAction(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/permits/${selectedPermitForAction}/approve`, {
+      const response = await fetch(`${API_URL}/permits/${selectedPermitForAction}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +131,7 @@ const Dashboard = ({ token, userRole }) => {
     const icons = { 
       ALTURA: '📈', 
       ELECTRICO: '⚡', 
-      CONFINADO: '��', 
+      CONFINADO: '⛰️', 
       CALIENTE: '🔥' 
     };
     return icons[riskType] || '📋';

@@ -1,5 +1,6 @@
 // client/src/services/offlineSync.js
 import { openDB } from 'idb';
+import API_URL from '../config/api';
 
 class OfflineSyncService {
     constructor() {
@@ -62,7 +63,7 @@ class OfflineSyncService {
 
     async cacheActiveForms() {
         try {
-            const response = await fetch('/api/forms/active');
+            const response = await fetch(`${API_URL}/forms/active`);
             const forms = await response.json();
             
             const tx = this.db.transaction('formCache', 'readwrite');
@@ -127,7 +128,7 @@ class OfflineSyncService {
         
         for (const permit of pendingPermits) {
             try {
-                const response = await fetch('/api/permits/offline', {
+                const response = await fetch(`${API_URL}/permits/offline`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(permit)
@@ -163,7 +164,7 @@ class OfflineSyncService {
                 formData.append('permitId', photo.permitId);
                 formData.append('metadata', JSON.stringify(photo.metadata));
                 
-                const response = await fetch('/api/photos/upload', {
+                const response = await fetch(`${API_URL}/photos/upload`, {
                     method: 'POST',
                     body: formData
                 });

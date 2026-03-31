@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, FileText, CheckCircle, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import SignaturePad from '../common/SignaturePad';
 import PhotoEvidence from '../common/PhotoEvidence';
+import API_URL from '../config/api';
 
 const RISK_TYPES = [
   { value: 'ALTURA', label: 'Trabajo en Altura', icon: '📈' },
@@ -95,7 +96,7 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/permits', {
+      const response = await fetch(`${API_URL}/permits`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
