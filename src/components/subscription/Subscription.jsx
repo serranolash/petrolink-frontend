@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown, Users, FileText, CheckCircle, ArrowUpCircle, CreditCard } from 'lucide-react';
+import api from '../../services/api';  // ✅ Importa tu instancia de axios
 
 const Subscription = ({ token }) => {
   const navigate = useNavigate();
@@ -13,10 +14,11 @@ const Subscription = ({ token }) => {
 
   const fetchSubscription = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/subscription/plan', {
+      // ✅ Usa la instancia api en lugar de fetch
+      const response = await api.get('/subscription/plan', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         setSubscription(data.subscription);
       }
@@ -28,9 +30,7 @@ const Subscription = ({ token }) => {
   };
 
   const handleUpgrade = (plan) => {
-    // Guardar el plan seleccionado
     localStorage.setItem('pending_upgrade', plan);
-    // Redirigir al simulador de pago
     navigate('/payment/simulator');
   };
 
