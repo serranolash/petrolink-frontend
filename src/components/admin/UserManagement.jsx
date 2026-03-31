@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Edit2, Trash2, CheckCircle, XCircle, Shield, UserCheck, User } from 'lucide-react';
-import API_URL from '../config/api';
+import API_URL from '../../config/api';
 
 const UserManagement = ({ token }) => {
   const [users, setUsers] = useState([]);

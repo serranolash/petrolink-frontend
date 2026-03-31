@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, CheckCircle, XCircle, FileText, RefreshCw, Calendar, TrendingUp, Camera, PenTool, MapPin, Image, Clock, UserCheck, UserX } from 'lucide-react';
 import SignaturePad from '../common/SignaturePad';
-import API_URL from '../config/api';
+import API_URL from '../../config/api';
 
 const Dashboard = ({ token, userRole }) => {
   const [stats, setStats] = useState(null);
