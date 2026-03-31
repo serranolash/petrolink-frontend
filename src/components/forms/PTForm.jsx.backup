@@ -1,0 +1,422 @@
+import React, { useState, useEffect } from 'react';
+import { Shield, FileText, CheckCircle, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import Alert from "../common/Alert";
+import SignaturePad from "../common/SignaturePad";
+import PhotoEvidence from "../common/PhotoEvidence";
+import OfflineSyncService from '../services/OfflineSyncService';
+
+const RISK_TYPES = [
+  { value: 'ALTURA', label: 'Trabajo en Altura', icon: '📈' },
+  { value: 'ELECTRICO', label: 'Riesgo Eléctrico', icon: '⚡' },
+  { value: 'CONFINADO', label: 'Espacio Confinado', icon: '🚪' },
+  { value: 'CALIENTE', label: 'Trabajo en Caliente', icon: '🔥' }
+];
+
+const SAFETY_CHECKS = {
+  ALTURA: [
+    { id: 'has_harness', label: '¿Cuenta con arnés de seguridad certificado?', critical: true },
+    { id: 'has_anchor_point', label: '¿Punto de anclaje certificado?', critical: true }
+  ],
+  ELECTRICO: [
+    { id: 'has_dielectric_ppe', label: '¿Cuenta con EPP dieléctrico completo?', critical: true },
+    { id: 'voltage_test_performed', label: '¿Prueba de ausencia de tensión realizada?', critical: true }
+  ],
+  CONFINADO: [
+    { id: 'atmosphere_monitored', label: '¿Monitoreo de atmósfera realizado?', critical: true },
+    { id: 'has_entry_permit', label: '¿Permiso de entrada vigente?', critical: true },
+    { id: 'has_rescue_team', label: '¿Equipo de rescate disponible?', critical: true }
+  ],
+  CALIENTE: [
+    { id: 'has_fire_extinguisher', label: '¿Extintor disponible y cargado?', critical: true },
+    { id: 'gas_monitoring', label: '¿Monitoreo de gases inflamables?', critical: true }
+  ]
+};
+
+const PTForm = ({ onSubmitSuccess }) => {
+  const [selectedRisk, setSelectedRisk] = useState(null);
+  const [safetyChecks, setSafetyChecks] = useState({});
+  const [technicianName, setTechnicianName] = useState('');
+  const [supervisorName, setSupervisorName] = useState('');
+  const [workLocation, setWorkLocation] = useState('');
+  const [workDescription, setWorkDescription] = useState('');
+  const [safetyEvaluation, setSafetyEvaluation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [signatures, setSignatures] = useState({});
+  const [photos, setPhotos] = useState([]);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    const checkPendingSync = async () => {
+      const count = await OfflineSyncService.getPendingCount();
+      setPendingSyncCount(count);
+    };
+    checkPendingSync();
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const checkSafety = () => {
+    if (!selectedRisk) return false;
+    
+    const criticalChecks = SAFETY_CHECKS[selectedRisk] || [];
+    const failedCritical = criticalChecks.some(check => safetyChecks[check.id] !== true);
+    
+    if (failedCritical) {
+      setSafetyEvaluation({
+        isSafe: false,
+        message: '⚠️ TRABAJO NO SEGURO: Faltan requisitos críticos de seguridad'
+      });
+      return false;
+    }
+    
+    setSafetyEvaluation({
+      isSafe: true,
+      message: '✅ TRABAJO SEGURO: Todos los requisitos críticos cumplidos'
+    });
+    return true;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1 && !selectedRisk) {
+      alert('Por favor selecciona un tipo de riesgo');
+      return;
+    }
+    if (currentStep === 2) {
+      const isSafe = checkSafety();
+      if (!isSafe) return;
+    }
+    if (currentStep === 3 && photos.length === 0) {
+      alert('Por favor adjunta al menos una foto como evidencia');
+      return;
+    }
+    if (currentStep === 4 && (!signatures.technician || !signatures.supervisor)) {
+      alert('Por favor completa ambas firmas');
+      return;
+    }
+    if (currentStep === 5 && (!technicianName || !supervisorName || !workLocation || !workDescription)) {
+      alert('Por favor completa todos los campos');
+      return;
+    }
+    setCurrentStep(currentStep + 1);
+  };
+
+  const handleBack = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  const handleSignatureSave = (signatureType, signatureData) => {
+    setSignatures(prev => ({
+      ...prev,
+      [signatureType]: signatureData
+    }));
+  };
+
+  const handlePhotoCapture = (photo) => {
+    setPhotos(prev => [...prev, photo]);
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    
+    const permitData = {
+      risk_type: selectedRisk,
+      safety_checks: safetyChecks,
+      technician_name: technicianName,
+      supervisor_name: supervisorName,
+      work_location: workLocation,
+      work_description: workDescription,
+      signatures,
+      photos: photos.map(p => ({ id: p.id, data: p.data })),
+      offlineMode: isOffline
+    };
+    
+    try {
+      if (isOffline) {
+        await OfflineSyncService.savePermitOffline(permitData);
+        await OfflineSyncService.saveSignatureOffline(signatures.technician, 'temp');
+        await OfflineSyncService.saveSignatureOffline(signatures.supervisor, 'temp');
+        for (const photo of photos) {
+          await OfflineSyncService.savePhotoOffline(photo, 'temp');
+        }
+        
+        alert('✅ Permiso guardado localmente. Se sincronizará automáticamente cuando haya conexión.');
+        onSubmitSuccess?.({ offline: true });
+        
+        setSelectedRisk(null);
+        setSafetyChecks({});
+        setTechnicianName('');
+        setSupervisorName('');
+        setWorkLocation('');
+        setWorkDescription('');
+        setSafetyEvaluation(null);
+        setSignatures({});
+        setPhotos([]);
+        setCurrentStep(1);
+        
+      } else {
+        const response = await fetch('http://localhost:3001/api/permits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(permitData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.safetyEvaluation.isSafe && data.pdf) {
+          const link = document.createElement('a');
+          link.href = 'data:application/pdf;base64,' + data.pdf;
+          link.download = 'permit-' + data.permit.permit_number + '.pdf';
+          link.click();
+        }
+        
+        onSubmitSuccess?.(data);
+        
+        setSelectedRisk(null);
+        setSafetyChecks({});
+        setTechnicianName('');
+        setSupervisorName('');
+        setWorkLocation('');
+        setWorkDescription('');
+        setSafetyEvaluation(null);
+        setSignatures({});
+        setPhotos([]);
+        setCurrentStep(1);
+        
+        alert(data.safetyEvaluation.isSafe ? '✅ Permiso generado exitosamente' : '❌ Permiso rechazado por incumplimientos de seguridad');
+      }
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al generar el permiso. ' + (isOffline ? 'Se guardará cuando haya conexión.' : ''));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const steps = ['Riesgo', 'Seguridad', 'Fotos', 'Firmas', 'Datos'];
+
+  return (
+    <div className="max-w-4xl mx-auto p-4">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-green-800 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-white">Energy-Compliance</h1>
+              <p className="text-green-200 text-sm">Sistema de Permisos de Trabajo Seguro</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {isOffline ? (
+                <span className="flex items-center gap-1 bg-yellow-600 text-white px-3 py-1 rounded-full text-xs">
+                  <WifiOff className="w-3 h-3" />
+                  Offline
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded-full text-xs">
+                  <Wifi className="w-3 h-3" />
+                  Online
+                </span>
+              )}
+              <Shield className="w-10 h-10 text-white" />
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {/* Stepper */}
+          <div className="flex mb-8">
+            {steps.map((step, index) => (
+              <div key={index} className="flex-1">
+                <div className={`h-1 ${currentStep > index ? 'bg-green-600' : currentStep === index + 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <div className={`text-xs text-center mt-1 ${currentStep === index + 1 ? 'font-bold text-green-600' : 'text-gray-500'}`}>
+                  {step}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Step 1: Riesgo */}
+          {currentStep === 1 && (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700">Tipo de Riesgo *</label>
+              <div className="grid grid-cols-2 gap-3">
+                {RISK_TYPES.map(risk => (
+                  <button
+                    key={risk.value}
+                    type="button"
+                    onClick={() => setSelectedRisk(risk.value)}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                      selectedRisk === risk.value 
+                        ? 'border-green-600 bg-green-50 ring-2 ring-green-200' 
+                        : 'border-gray-200 bg-white hover:border-green-400'
+                    }`}
+                  >
+                    <span className="text-3xl block mb-2">{risk.icon}</span>
+                    <span className="text-sm font-medium">{risk.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Step 2: Seguridad */}
+          {currentStep === 2 && selectedRisk && (
+            <div className="space-y-3 bg-gray-50 p-4 rounded-xl">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                Lista de Verificación de Seguridad
+              </h3>
+              
+              {SAFETY_CHECKS[selectedRisk].map(check => (
+                <label
+                  key={check.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                    check.critical && safetyChecks[check.id] === false
+                      ? 'bg-red-50 border-l-4 border-red-600'
+                      : 'hover:bg-white'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={safetyChecks[check.id] || false}
+                    onChange={(e) => setSafetyChecks({ ...safetyChecks, [check.id]: e.target.checked })}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <div className="flex-1">
+                    <span className={`font-medium ${check.critical ? 'text-red-800' : 'text-gray-700'}`}>
+                      {check.label}
+                      {check.critical && <span className="ml-2 text-xs text-red-600">(CRÍTICO)</span>}
+                    </span>
+                  </div>
+                </label>
+              ))}
+              
+              {safetyEvaluation && (
+                <div className="mt-4">
+                  <Alert
+                    type={safetyEvaluation.isSafe ? 'success' : 'error'}
+                    message={safetyEvaluation.message}
+                    icon={safetyEvaluation.isSafe ? CheckCircle : AlertTriangle}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Step 3: Fotos */}
+          {currentStep === 3 && (
+            <PhotoEvidence
+              required={true}
+              permitId="temp"
+              onPhotoCaptured={handlePhotoCapture}
+              maxPhotos={3}
+            />
+          )}
+          
+          {/* Step 4: Firmas */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <SignaturePad
+                signerName={technicianName || 'Técnico'}
+                signerType="TECHNICIAN"
+                onSave={(sig) => handleSignatureSave('technician', sig)}
+                permitId="temp"
+              />
+              <SignaturePad
+                signerName={supervisorName || 'Supervisor'}
+                signerType="SUPERVISOR"
+                onSave={(sig) => handleSignatureSave('supervisor', sig)}
+                permitId="temp"
+              />
+            </div>
+          )}
+          
+          {/* Step 5: Datos */}
+          {currentStep === 5 && (
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={technicianName}
+                onChange={(e) => setTechnicianName(e.target.value)}
+                placeholder="Nombre del Técnico de Campo *"
+                className="w-full p-3 text-lg border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+              <input
+                type="text"
+                value={supervisorName}
+                onChange={(e) => setSupervisorName(e.target.value)}
+                placeholder="Nombre del Supervisor *"
+                className="w-full p-3 text-lg border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+              <input
+                type="text"
+                value={workLocation}
+                onChange={(e) => setWorkLocation(e.target.value)}
+                placeholder="Ubicación del Trabajo *"
+                className="w-full p-3 text-lg border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+              <textarea
+                value={workDescription}
+                onChange={(e) => setWorkDescription(e.target.value)}
+                placeholder="Descripción detallada del trabajo *"
+                rows="4"
+                className="w-full p-3 text-lg border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          )}
+          
+          {/* Botones */}
+          <div className="flex gap-3 mt-8">
+            {currentStep > 1 && (
+              <button
+                onClick={handleBack}
+                className="flex-1 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
+              >
+                ← Atrás
+              </button>
+            )}
+            {currentStep < steps.length ? (
+              <button
+                onClick={handleNext}
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700"
+              >
+                Continuar →
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center gap-2 ${
+                  safetyEvaluation?.isSafe === false
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                <FileText className="w-5 h-5" />
+                {loading ? 'Procesando...' : (isOffline ? '💾 Guardar Localmente' : '✅ Generar Permiso')}
+              </button>
+            )}
+          </div>
+          
+          {pendingSyncCount > 0 && isOffline && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+              ⚠️ Tienes {pendingSyncCount} elemento(s) pendiente(s) de sincronización. Conéctate a internet para enviarlos.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PTForm;

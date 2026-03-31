@@ -1,0 +1,32 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globales para uso en campo */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f3f4f6;
+}
+
+/* Botones grandes para uso con guantes */
+button, 
+[role="button"],
+input[type="submit"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Inputs grandes para campo */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* Mejor legibilidad bajo el sol */
+.text-high-contrast {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
