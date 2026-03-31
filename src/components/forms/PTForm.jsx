@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, FileText, CheckCircle, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import SignaturePad from '../common/SignaturePad';
 import PhotoEvidence from '../common/PhotoEvidence';
-import API_URL from '../config/api';
+import API_URL from '../../config/api';
 
 const RISK_TYPES = [
   { value: 'ALTURA', label: 'Trabajo en Altura', icon: '📈' },
