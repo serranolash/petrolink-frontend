@@ -3,6 +3,7 @@ import { Shield, FileText, CheckCircle, AlertTriangle, Wifi, WifiOff } from 'luc
 import SignaturePad from '../common/SignaturePad';
 import PhotoEvidence from '../common/PhotoEvidence';
 import API_URL from '../../config/api';
+import WorkLocationSelector from '../common/WorkLocationSelector';
 
 const RISK_TYPES = [
   { value: 'ALTURA', label: 'Trabajo en Altura', icon: '📈' },
@@ -44,6 +45,7 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [technicianSignature, setTechnicianSignature] = useState(null);
   const [photos, setPhotos] = useState([]);
+  const [workLocationData, setWorkLocationData] = useState(null);
 
   // Si es técnico, pre-llenar el nombre y deshabilitar el campo
   const isTechnician = userRole === 'technician';
@@ -110,7 +112,8 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
           work_location: workLocation,
           work_description: workDescription,
           technician_signature: technicianSignature,
-          photos: photos.map(p => ({ id: p.id, data: p.data }))
+          photos: photos.map(p => ({ id: p.id, data: p.data })),
+          locationData: workLocationData  // ✅ Enviar datos de ubicación
         })
       });
       
@@ -251,6 +254,11 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
           
           {currentStep === 5 && (
             <div className="space-y-4">
+              <WorkLocationSelector
+                token={token}
+                onSelect={(location) => setWorkLocationData(location)}
+                initialRadius={100}
+              />
               <input
                 type="text"
                 value={technicianName}
