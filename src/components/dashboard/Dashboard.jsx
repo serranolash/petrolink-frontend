@@ -5,10 +5,11 @@ import {
     TrendingUp, Camera, PenTool, MapPin, Image, Clock, UserCheck, UserX,
     Navigation, AlertCircle, Globe
 } from 'lucide-react';
+import SignaturePad from '../common/SignaturePad'; // ✅ Importar SignaturePad
 
 const API_BASE_URL = 'https://petrolink-backend-production.up.railway.app/api';
 
-const Dashboard = ({ token, userRole }) => {
+const Dashboard = ({ token, userRole, currentUser }) => {
   const [stats, setStats] = useState(null);
   const [permits, setPermits] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,6 +214,9 @@ const Dashboard = ({ token, userRole }) => {
     );
   }
 
+  // Obtener el nombre del supervisor del permiso seleccionado
+  const selectedPermitData = selectedPermitForAction ? permits.find(p => p.id === selectedPermitForAction) : null;
+
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
@@ -395,6 +399,7 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
+                    {/* Firma del Técnico */}
                     {permit.technician_signature && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -415,6 +420,7 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
+                    {/* Firma del Supervisor */}
                     {permit.supervisor_signature && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -435,6 +441,7 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
+                    {/* Fotos */}
                     {permit.photos && permit.photos.length > 0 && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -455,6 +462,7 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
+                    {/* Botones de aprobación */}
                     {canApprove && permit.status === 'PENDING' && (
                       <div className="mt-4 flex gap-3">
                         <button
@@ -491,12 +499,37 @@ const Dashboard = ({ token, userRole }) => {
         )}
       </div>
 
-      {showApproveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4">Aprobar Permiso</h3>
-            <p className="text-sm text-gray-600 mb-4">Firma como supervisor para aprobar este permiso</p>
-            <div className="flex gap-3">
+      {/* ✅ Modal de Aprobación con SignaturePad */}
+      {showApproveModal && selectedPermitData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold mb-2">Aprobar Permiso</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Firma como supervisor para aprobar este permiso
+            </p>
+            
+            {/* Detalles del permiso */}
+            <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm">
+              <p><strong>Permiso:</strong> {selectedPermitData.permit_number}</p>
+              <p><strong>Técnico:</strong> {selectedPermitData.technician_name}</p>
+              <p><strong>Ubicación:</strong> {selectedPermitData.work_location}</p>
+            </div>
+            
+            {/* ✅ Componente de firma */}
+            <SignaturePad
+              signerName={currentUser?.full_name || 'Supervisor'}
+              signerType="SUPERVISOR"
+              onSave={(data) => setSupervisorSignature(data)}
+              workLocationCoords={
+                selectedPermitData.work_latitude && selectedPermitData.work_longitude
+                  ? { latitude: selectedPermitData.work_latitude, longitude: selectedPermitData.work_longitude }
+                  : null
+              }
+              workRadius={selectedPermitData.work_radius || 100}
+              permitId={selectedPermitData.id}
+            />
+            
+            <div className="flex gap-3 mt-4">
               <button
                 onClick={handleApprove}
                 disabled={!supervisorSignature || processingAction}
@@ -519,6 +552,7 @@ const Dashboard = ({ token, userRole }) => {
         </div>
       )}
 
+      {/* Modal de Rechazo */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
@@ -553,6 +587,7 @@ const Dashboard = ({ token, userRole }) => {
         </div>
       )}
 
+      {/* Modal de foto expandida */}
       {expandedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={() => setExpandedPhoto(null)}>
           <div className="max-w-3xl max-h-screen">

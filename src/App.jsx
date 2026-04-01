@@ -127,7 +127,7 @@ function App() {
           currentUser={user}
         />
       )}
-      {activeTab === 'dashboard' && <Dashboard token={token} userRole={user?.role} />}
+      {activeTab === 'dashboard' && <Dashboard token={token} userRole={user?.role} currentUser={user} />}
       {activeTab === 'users' && <UserManagement token={token} />}
       {activeTab === 'subscription' && <Subscription token={token} />}
     </div>
