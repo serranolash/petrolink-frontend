@@ -1,11 +1,12 @@
 // client/src/components/dashboard/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
 import { 
     BarChart3, CheckCircle, XCircle, FileText, RefreshCw, Calendar, 
     TrendingUp, Camera, PenTool, MapPin, Image, Clock, UserCheck, UserX,
     Navigation, AlertCircle, Globe
 } from 'lucide-react';
+
+const API_BASE_URL = 'https://petrolink-backend-production.up.railway.app/api';
 
 const Dashboard = ({ token, userRole }) => {
   const [stats, setStats] = useState(null);
@@ -25,18 +26,27 @@ const Dashboard = ({ token, userRole }) => {
     
     setLoading(true);
     try {
-        // ✅ Usar api en lugar de fetch
-        const statsResponse = await api.get('/dashboard/stats');
-        setStats(statsResponse.data.data);
-        
-        const permitsResponse = await api.get('/permits');
-        setPermits(permitsResponse.data.permits);
+      const statsResponse = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const statsData = await statsResponse.json();
+      if (statsData.success) {
+        setStats(statsData.data);
+      }
+
+      const permitsResponse = await fetch(`${API_BASE_URL}/permits`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const permitsData = await permitsResponse.json();
+      if (permitsData.success) {
+        setPermits(permitsData.permits || []);
+      }
     } catch (error) {
-        console.error('Error fetching data:', error);
+      console.error('Error fetching data:', error);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   useEffect(() => {
     if (token) {
@@ -52,7 +62,7 @@ const Dashboard = ({ token, userRole }) => {
     
     setProcessingAction(true);
     try {
-      const response = await fetch(`/api/permits/${selectedPermitForAction}/approve`, {
+      const response = await fetch(`${API_BASE_URL}/permits/${selectedPermitForAction}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +104,7 @@ const Dashboard = ({ token, userRole }) => {
     
     setProcessingAction(true);
     try {
-      const response = await fetch(`/api/permits/${selectedPermitForAction}/approve`, {
+      const response = await fetch(`${API_BASE_URL}/permits/${selectedPermitForAction}/approve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -177,12 +187,6 @@ const Dashboard = ({ token, userRole }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('es-ES');
-  };
-
-  const formatDistance = (meters) => {
-    if (!meters) return 'N/A';
-    if (meters < 1000) return `${Math.round(meters)} metros`;
-    return `${(meters / 1000).toFixed(2)} km`;
   };
 
   const canApprove = (userRole === 'admin' || userRole === 'supervisor');
@@ -370,7 +374,6 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     </div>
 
-                    {/* ✅ NUEVO: Sección de Geocerca */}
                     {(permit.work_latitude || permit.work_longitude) && (
                       <div className="mt-4 p-3 bg-cyan-50 rounded-lg border border-cyan-200">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -388,26 +391,10 @@ const Dashboard = ({ token, userRole }) => {
                             <p className="text-gray-500 text-xs">Radio de tolerancia</p>
                             <p className="font-medium">📏 {permit.work_radius || 100} metros</p>
                           </div>
-                          {permit.location_source && (
-                            <div>
-                              <p className="text-gray-500 text-xs">Origen de la ubicación</p>
-                              <p className="text-xs">
-                                {permit.location_source === 'saved' ? '🏢 Sitio guardado' : 
-                                 permit.location_source === 'gps' ? '📍 GPS capturado' : '✏️ Manual'}
-                              </p>
-                            </div>
-                          )}
-                          {permit.work_location_id && (
-                            <div>
-                              <p className="text-gray-500 text-xs">ID del sitio</p>
-                              <p className="text-xs">#{permit.work_location_id}</p>
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
 
-                    {/* Firma del Técnico con información de ubicación */}
                     {permit.technician_signature && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -419,52 +406,6 @@ const Dashboard = ({ token, userRole }) => {
                           <p className="text-xs text-gray-500 mt-1">
                             {formatDate(permit.technician_signature.timestamp)}
                           </p>
-                          
-                          {/* ✅ Ubicación de la firma */}
-                          {permit.technician_signature.location && (
-                            <div className="mt-2 pt-2 border-t border-gray-100">
-                              <p className="text-xs text-gray-500 flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                Ubicación al firmar:
-                              </p>
-                              <p className="text-xs font-mono">
-                                {permit.technician_signature.location.latitude?.toFixed(6)}, {permit.technician_signature.location.longitude?.toFixed(6)}
-                              </p>
-                              {permit.technician_signature.location.accuracy && (
-                                <p className="text-xs text-gray-400">
-                                  Precisión: ±{Math.round(permit.technician_signature.location.accuracy)}m
-                                </p>
-                              )}
-                              
-                              {/* ✅ Validación de geocerca */}
-                              {permit.technician_signature.is_within_geofence !== undefined && (
-                                <div className={`mt-2 text-xs ${permit.technician_signature.is_within_geofence ? 'text-green-600' : 'text-red-600'}`}>
-                                  {permit.technician_signature.is_within_geofence ? (
-                                    <div className="flex items-center gap-1">
-                                      <CheckCircle className="w-3 h-3" />
-                                      <span>✅ Dentro del área de trabajo</span>
-                                      {permit.technician_signature.distance_to_work_meters && (
-                                        <span className="text-gray-500 ml-1">
-                                          (a {Math.round(permit.technician_signature.distance_to_work_meters)}m)
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1">
-                                      <XCircle className="w-3 h-3" />
-                                      <span>❌ Fuera del área de trabajo</span>
-                                      {permit.technician_signature.distance_to_work_meters && (
-                                        <span className="text-gray-500 ml-1">
-                                          (a {Math.round(permit.technician_signature.distance_to_work_meters)}m)
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
                           {permit.technician_signature.signatureData && (
                             <div className="mt-2 flex justify-center">
                               <img src={permit.technician_signature.signatureData} alt="Firma Técnico" className="h-16 object-contain" />
@@ -474,7 +415,6 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
-                    {/* Firma del Supervisor con información de ubicación */}
                     {permit.supervisor_signature && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -486,52 +426,6 @@ const Dashboard = ({ token, userRole }) => {
                           <p className="text-xs text-gray-500 mt-1">
                             {formatDate(permit.supervisor_signature.timestamp)}
                           </p>
-                          
-                          {/* ✅ Ubicación de la firma */}
-                          {permit.supervisor_signature.location && (
-                            <div className="mt-2 pt-2 border-t border-gray-100">
-                              <p className="text-xs text-gray-500 flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                Ubicación al firmar:
-                              </p>
-                              <p className="text-xs font-mono">
-                                {permit.supervisor_signature.location.latitude?.toFixed(6)}, {permit.supervisor_signature.location.longitude?.toFixed(6)}
-                              </p>
-                              {permit.supervisor_signature.location.accuracy && (
-                                <p className="text-xs text-gray-400">
-                                  Precisión: ±{Math.round(permit.supervisor_signature.location.accuracy)}m
-                                </p>
-                              )}
-                              
-                              {/* ✅ Validación de geocerca */}
-                              {permit.supervisor_signature.is_within_geofence !== undefined && (
-                                <div className={`mt-2 text-xs ${permit.supervisor_signature.is_within_geofence ? 'text-green-600' : 'text-red-600'}`}>
-                                  {permit.supervisor_signature.is_within_geofence ? (
-                                    <div className="flex items-center gap-1">
-                                      <CheckCircle className="w-3 h-3" />
-                                      <span>✅ Dentro del área de trabajo</span>
-                                      {permit.supervisor_signature.distance_to_work_meters && (
-                                        <span className="text-gray-500 ml-1">
-                                          (a {Math.round(permit.supervisor_signature.distance_to_work_meters)}m)
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1">
-                                      <XCircle className="w-3 h-3" />
-                                      <span>❌ Fuera del área de trabajo</span>
-                                      {permit.supervisor_signature.distance_to_work_meters && (
-                                        <span className="text-gray-500 ml-1">
-                                          (a {Math.round(permit.supervisor_signature.distance_to_work_meters)}m)
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
                           {permit.supervisor_signature.signatureData && (
                             <div className="mt-2 flex justify-center">
                               <img src={permit.supervisor_signature.signatureData} alt="Firma Supervisor" className="h-16 object-contain" />
@@ -541,7 +435,6 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
-                    {/* Fotos */}
                     {permit.photos && permit.photos.length > 0 && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -562,7 +455,6 @@ const Dashboard = ({ token, userRole }) => {
                       </div>
                     )}
 
-                    {/* Botones de aprobación */}
                     {canApprove && permit.status === 'PENDING' && (
                       <div className="mt-4 flex gap-3">
                         <button
@@ -599,18 +491,11 @@ const Dashboard = ({ token, userRole }) => {
         )}
       </div>
 
-      {/* Modal de Aprobación con Firma */}
       {showApproveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-bold mb-4">Aprobar Permiso</h3>
             <p className="text-sm text-gray-600 mb-4">Firma como supervisor para aprobar este permiso</p>
-            
-            {/* Aquí iría el SignaturePad - ya existe en tu código */}
-            <div className="border border-gray-200 rounded-lg p-4 mb-4">
-              <p className="text-center text-gray-400 text-sm">[Componente de firma aquí]</p>
-            </div>
-            
             <div className="flex gap-3">
               <button
                 onClick={handleApprove}
@@ -634,7 +519,6 @@ const Dashboard = ({ token, userRole }) => {
         </div>
       )}
 
-      {/* Modal de Rechazo */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
@@ -669,7 +553,6 @@ const Dashboard = ({ token, userRole }) => {
         </div>
       )}
 
-      {/* Modal de foto expandida */}
       {expandedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={() => setExpandedPhoto(null)}>
           <div className="max-w-3xl max-h-screen">
