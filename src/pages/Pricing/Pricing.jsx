@@ -1,73 +1,81 @@
 // client/src/pages/Pricing/Pricing.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Check, X, Shield, Users, FileText, BarChart3, Headset, Zap, TrendingUp, Clock, Globe, ChevronRight } from 'lucide-react';
+import { Check, X, Shield, Users, FileText, BarChart3, Headset, MapPin, Wifi, Globe, TrendingUp, AlertCircle, Zap } from 'lucide-react';
 
 const Pricing = () => {
   const plans = [
     {
-      name: 'Free',
-      price: '0',
+      name: 'Starter',
+      price: '149',
       period: 'mes',
-      description: 'Ideal para pequeñas empresas que inician',
-      badge: null,
+      description: 'Ideal para pequeños contratistas',
+      badge: 'Base',
+      icon: <Shield className="w-8 h-8 text-cyan-500" />,
       features: [
-        { name: 'Hasta 5 usuarios', included: true },
-        { name: '100 permisos/mes', included: true },
-        { name: 'Firma digital básica', included: true },
-        { name: 'Dashboard básico', included: true },
-        { name: 'Soporte por email', included: true },
-        { name: 'Evidencia fotográfica', included: false },
-        { name: 'Firma con GPS', included: false },
-        { name: 'Modo offline', included: false },
-        { name: 'API Access', included: false },
-        { name: 'Soporte 24/7', included: false }
+        { name: 'Hasta 10 usuarios', included: true, highlight: false },
+        { name: '200 permisos/mes', included: true, highlight: false },
+        { name: 'Firma digital (Pin/Dibujo)', included: true, highlight: false },
+        { name: 'GPS básico', included: true, highlight: false },
+        { name: 'Modo Offline', included: true, highlight: false },
+        { name: 'PDF básico', included: true, highlight: false },
+        { name: 'Dashboard básico', included: true, highlight: false },
+        { name: 'Soporte email (48h)', included: true, highlight: false },
+        { name: 'Geocerca (Radio seguridad)', included: false, highlight: false },
+        { name: 'Acceso API', included: false, highlight: false },
+        { name: 'Dashboard analítica', included: false, highlight: false },
+        { name: 'Integración ERP', included: false, highlight: false }
       ],
-      buttonText: 'Comenzar Gratis',
-      buttonVariant: 'outline'
+      buttonText: 'Comenzar Demo',
+      buttonVariant: 'outline',
+      popular: false
     },
     {
-      name: 'Pro',
-      price: '49',
+      name: 'Business',
+      price: '499',
       period: 'mes',
       description: 'Para empresas en crecimiento',
-      badge: 'MÁS POPULAR',
-      popular: true,
+      badge: 'Más Elegido',
+      icon: <TrendingUp className="w-8 h-8 text-cyan-500" />,
       features: [
-        { name: 'Hasta 20 usuarios', included: true },
-        { name: '1,000 permisos/mes', included: true },
-        { name: 'Firma digital avanzada', included: true },
-        { name: 'Dashboard avanzado', included: true },
-        { name: 'Soporte prioritario', included: true },
-        { name: 'Evidencia fotográfica', included: true },
-        { name: 'Firma con GPS', included: true },
-        { name: 'Modo offline', included: true },
-        { name: 'API Access', included: false },
-        { name: 'Soporte 24/7', included: false }
+        { name: 'Hasta 50 usuarios', included: true, highlight: true },
+        { name: '2,000 permisos/mes', included: true, highlight: true },
+        { name: 'Firma avanzada (Hash + Biometría)', included: true, highlight: false },
+        { name: 'Geocerca (Radio seguridad)', included: true, highlight: false },
+        { name: 'Modo Offline + API', included: true, highlight: false },
+        { name: 'Dashboard analítica', included: true, highlight: false },
+        { name: 'Reportes avanzados', included: true, highlight: false },
+        { name: 'Soporte prioritario (Chat/WhatsApp)', included: true, highlight: false },
+        { name: 'Mapas de calor de riesgo', included: true, highlight: false },
+        { name: 'Firma legal/gubernamental', included: false, highlight: false },
+        { name: 'Integración ERP', included: false, highlight: false },
+        { name: 'Auditoría para entes reguladores', included: false, highlight: false }
       ],
-      buttonText: 'Elegir Pro',
-      buttonVariant: 'primary'
+      buttonText: 'Elegir Business',
+      buttonVariant: 'primary',
+      popular: true
     },
     {
       name: 'Enterprise',
-      price: '99',
-      period: 'mes',
-      description: 'Para grandes corporaciones',
-      badge: null,
+      price: 'Personalizado',
+      period: '',
+      description: 'Para multinacionales y operadoras',
+      badge: 'Corporativo',
+      icon: <Globe className="w-8 h-8 text-cyan-500" />,
       features: [
-        { name: 'Usuarios ilimitados', included: true },
-        { name: 'Permisos ilimitados', included: true },
-        { name: 'Firma digital avanzada', included: true },
-        { name: 'Dashboard personalizado', included: true },
-        { name: 'Soporte 24/7', included: true },
-        { name: 'Evidencia fotográfica', included: true },
-        { name: 'Firma con GPS', included: true },
-        { name: 'Modo offline', included: true },
-        { name: 'API Access', included: true },
-        { name: 'Implementación dedicada', included: true }
+        { name: 'Usuarios ilimitados', included: true, highlight: true },
+        { name: 'Permisos ilimitados', included: true, highlight: true },
+        { name: 'Firma legal/gubernamental', included: true, highlight: false },
+        { name: 'Mapas de calor de riesgo', included: true, highlight: false },
+        { name: 'Integración Full ERP (SAP)', included: true, highlight: false },
+        { name: 'Auditoría para entes reguladores', included: true, highlight: false },
+        { name: 'Dashboard personalizado', included: true, highlight: false },
+        { name: 'Gerente de cuenta 24/7', included: true, highlight: false },
+        { name: 'Implementación dedicada', included: true, highlight: false }
       ],
       buttonText: 'Contactar Ventas',
-      buttonVariant: 'outline'
+      buttonVariant: 'outline',
+      popular: false
     }
   ];
 
@@ -78,15 +86,25 @@ const Pricing = () => {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 bg-cyan-500/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
             <Zap className="w-4 h-4 text-cyan-400" />
-            <span className="text-cyan-400 text-sm font-medium">Planes flexibles</span>
+            <span className="text-cyan-400 text-sm font-medium">Planes Corporativos</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Planes y Precios
+            Invierte en Seguridad,<br />
+            <span className="text-cyan-400">Evita Multas Millonarias</span>
           </h1>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-            Elige el plan que mejor se adapte a las necesidades de tu empresa.
-            Todos los planes incluyen 14 días de prueba gratuita.
+            Protege tu operación por menos del costo de un equipo de protección personal.
           </p>
+        </div>
+      </div>
+
+      {/* Banner de alerta */}
+      <div className="bg-amber-50 border-b border-amber-200 py-3">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-center gap-2 text-amber-700 text-sm">
+            <AlertCircle className="w-4 h-4" />
+            <span>¿Sabías que una falla de cumplimiento en un permiso de trabajo puede costar más de <strong>$50,000 en multas</strong>? Protege tu operación por menos del costo de un EPP.</span>
+          </div>
         </div>
       </div>
 
@@ -103,30 +121,36 @@ const Pricing = () => {
               }`}
             >
               {plan.badge && (
-                <div className="absolute top-0 right-0">
-                  <div className="bg-cyan-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">
-                    {plan.badge}
-                  </div>
+                <div className={`absolute top-0 right-0 ${
+                  plan.popular ? 'bg-cyan-500' : 'bg-slate-600'
+                } text-white text-xs font-bold px-4 py-1 rounded-bl-lg z-10`}>
+                  {plan.badge}
                 </div>
               )}
               
               <div className="p-6">
+                <div className="mb-4">{plan.icon}</div>
                 <h3 className="text-2xl font-bold text-slate-800 mb-2">{plan.name}</h3>
                 <p className="text-slate-500 text-sm mb-4">{plan.description}</p>
+                
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-slate-800">${plan.price}</span>
-                  <span className="text-slate-500">/{plan.period}</span>
+                  <span className="text-4xl font-bold text-slate-800">
+                    {typeof plan.price === 'number' ? `$${plan.price}` : plan.price}
+                  </span>
+                  {plan.period && <span className="text-slate-500">/{plan.period}</span>}
                 </div>
                 
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
+                    <li key={idx} className="flex items-start gap-2">
                       {feature.included ? (
-                        <Check className="w-5 h-5 text-cyan-500 flex-shrink-0" />
+                        <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                          feature.highlight ? 'text-cyan-500' : 'text-green-500'
+                        }`} />
                       ) : (
-                        <X className="w-5 h-5 text-slate-300 flex-shrink-0" />
+                        <X className="w-5 h-5 text-slate-300 flex-shrink-0 mt-0.5" />
                       )}
-                      <span className={feature.included ? 'text-slate-700' : 'text-slate-400'}>
+                      <span className={feature.included ? 'text-slate-700' : 'text-slate-400 text-sm'}>
                         {feature.name}
                       </span>
                     </li>
@@ -134,7 +158,7 @@ const Pricing = () => {
                 </ul>
                 
                 <Link
-                  to="/register"
+                  to={plan.name === 'Enterprise' ? '/contact' : '/register'}
                   className={`block text-center py-3 rounded-lg font-semibold transition-all ${
                     plan.buttonVariant === 'primary'
                       ? 'bg-cyan-600 text-white hover:bg-cyan-700 transform hover:scale-105'
@@ -148,7 +172,7 @@ const Pricing = () => {
           ))}
         </div>
 
-        {/* Enterprise CTA */}
+        {/* Valor agregado */}
         <div className="mt-16 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl overflow-hidden">
           <div className="p-8 md:p-12 text-center">
             <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
@@ -163,7 +187,6 @@ const Pricing = () => {
               className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
             >
               Contactar Ventas
-              <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
         </div>

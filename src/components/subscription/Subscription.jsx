@@ -1,12 +1,13 @@
+// client/src/components/subscription/Subscription.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Crown, Users, FileText, CheckCircle, ArrowUpCircle, CreditCard } from 'lucide-react';
-import api from '../../services/api';  // ✅ Importa tu instancia de axios
+import { Crown, Users, FileText, CheckCircle, ArrowUpCircle, CreditCard, TrendingUp, MapPin, Wifi, BarChart3 } from 'lucide-react';
 
 const Subscription = ({ token }) => {
   const navigate = useNavigate();
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
 
   useEffect(() => {
     fetchSubscription();
@@ -14,11 +15,10 @@ const Subscription = ({ token }) => {
 
   const fetchSubscription = async () => {
     try {
-      // ✅ Usa la instancia api en lugar de fetch
-      const response = await api.get('/subscription/plan', {
+      const response = await fetch('http://localhost:3001/api/subscription/plan', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = response.data;
+      const data = await response.json();
       if (data.success) {
         setSubscription(data.subscription);
       }
@@ -29,15 +29,35 @@ const Subscription = ({ token }) => {
     }
   };
 
-  const handleUpgrade = (plan) => {
-    localStorage.setItem('pending_upgrade', plan);
-    navigate('/payment/simulator');
+  const handleUpgrade = async (plan) => {
+    setUpgrading(true);
+    try {
+      const response = await fetch('http://localhost:3001/api/subscription/upgrade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ plan })
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchSubscription();
+        alert(`¡Plan actualizado a ${data.subscription.plan_name}!`);
+      } else {
+        alert(data.error || 'Error al actualizar');
+      }
+    } catch (error) {
+      alert('Error al actualizar el plan');
+    } finally {
+      setUpgrading(false);
+    }
   };
 
   const getPlanColor = (plan) => {
     switch(plan) {
-      case 'free': return 'bg-gray-100 border-gray-300';
-      case 'pro': return 'bg-blue-50 border-blue-300';
+      case 'starter': return 'bg-blue-50 border-blue-300';
+      case 'business': return 'bg-cyan-50 border-cyan-300';
       case 'enterprise': return 'bg-purple-50 border-purple-300';
       default: return 'bg-gray-100';
     }
@@ -54,20 +74,23 @@ const Subscription = ({ token }) => {
     return <div className="text-center py-8">Cargando información de suscripción...</div>;
   }
 
+  const isBusiness = subscription?.plan === 'business';
+  const isStarter = subscription?.plan === 'starter';
+  const isEnterprise = subscription?.plan === 'enterprise';
+
   return (
     <div className="max-w-4xl mx-auto p-4">
+      {/* Plan Actual */}
       <div className={`rounded-xl shadow-lg overflow-hidden mb-6 border-2 ${getPlanColor(subscription.plan)}`}>
-        <div className="bg-gradient-to-r from-green-800 to-green-700 p-6 text-white">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">Plan {subscription.plan_name}</h2>
-              <p className="text-green-200 mt-1">
-                {subscription.expires_at 
-                  ? `Válido hasta: ${new Date(subscription.expires_at).toLocaleDateString('es-ES')}` 
-                  : 'Plan gratuito - sin fecha de expiración'}
+              <p className="text-slate-300 mt-1">
+                {subscription.company_name}
               </p>
             </div>
-            <Crown className="w-12 h-12 text-yellow-300" />
+            <Crown className="w-12 h-12 text-yellow-400" />
           </div>
         </div>
         
@@ -79,7 +102,7 @@ const Subscription = ({ token }) => {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-green-600 h-2 rounded-full transition-all"
+                className="bg-cyan-600 h-2 rounded-full transition-all"
                 style={{ width: `${Math.min(getUsagePercentage(), 100)}%` }}
               />
             </div>
@@ -120,65 +143,68 @@ const Subscription = ({ token }) => {
         </div>
       </div>
 
-      {subscription.plan === 'free' && (
+      {/* Upgrade Options */}
+      {isStarter && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <ArrowUpCircle className="w-6 h-6 text-green-600" />
+            <ArrowUpCircle className="w-6 h-6 text-cyan-600" />
             Actualiza tu plan
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="border rounded-lg p-4 hover:shadow-md transition">
-              <h4 className="text-lg font-bold text-blue-600">Plan Pro</h4>
-              <p className="text-2xl font-bold mt-2">$49<span className="text-sm text-gray-500">/mes</span></p>
+              <h4 className="text-lg font-bold text-cyan-600">Business</h4>
+              <p className="text-2xl font-bold mt-2">$499<span className="text-sm text-gray-500">/mes</span></p>
               <ul className="mt-3 space-y-1 text-sm">
-                <li>✓ Hasta 20 usuarios</li>
-                <li>✓ 1,000 permisos/mes</li>
-                <li>✓ Firma con GPS</li>
-                <li>✓ Evidencia fotográfica</li>
-                <li>✓ Modo offline</li>
+                <li>✓ Hasta 50 usuarios</li>
+                <li>✓ 2,000 permisos/mes</li>
+                <li>✓ Firma avanzada + Biometría</li>
+                <li>✓ Geocerca (Radio seguridad)</li>
+                <li>✓ Dashboard analítica</li>
+                <li>✓ API Access</li>
                 <li>✓ Soporte prioritario</li>
               </ul>
               <button
-                onClick={() => handleUpgrade('pro')}
-                className="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                onClick={() => handleUpgrade('business')}
+                disabled={upgrading}
+                className="mt-4 w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition"
               >
-                <CreditCard className="w-4 h-4" />
-                Probar Pago (Simulación)
+                {upgrading ? 'Procesando...' : 'Actualizar a Business'}
               </button>
             </div>
             <div className="border rounded-lg p-4 hover:shadow-md transition">
               <h4 className="text-lg font-bold text-purple-600">Enterprise</h4>
-              <p className="text-2xl font-bold mt-2">$99<span className="text-sm text-gray-500">/mes</span></p>
+              <p className="text-2xl font-bold mt-2">Personalizado</p>
               <ul className="mt-3 space-y-1 text-sm">
                 <li>✓ Usuarios ilimitados</li>
                 <li>✓ Permisos ilimitados</li>
-                <li>✓ API Access</li>
-                <li>✓ Dashboard personalizado</li>
-                <li>✓ Soporte 24/7</li>
-                <li>✓ Implementación dedicada</li>
+                <li>✓ Firma legal/gubernamental</li>
+                <li>✓ Integración ERP (SAP)</li>
+                <li>✓ Auditoría para entes reguladores</li>
+                <li>✓ Gerente de cuenta 24/7</li>
               </ul>
               <button
-                onClick={() => handleUpgrade('enterprise')}
-                className="mt-4 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                onClick={() => navigate('/contact')}
+                className="mt-4 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
               >
-                <CreditCard className="w-4 h-4" />
                 Contactar Ventas
               </button>
             </div>
           </div>
-          
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-600 text-center">
-              🧪 Modo de prueba: Al hacer clic, serás redirigido al simulador donde podrás activar el plan Pro inmediatamente.
-            </p>
-          </div>
         </div>
       )}
       
-      {subscription.plan === 'pro' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-          <p className="text-blue-800">
-            🎉 ¡Disfruta de tu plan Pro! Tienes acceso a todas las características premium.
+      {isBusiness && (
+        <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4 text-center">
+          <p className="text-cyan-800">
+            🎉 ¡Disfruta de tu plan Business! Tienes acceso a todas las características premium.
+          </p>
+        </div>
+      )}
+      
+      {isEnterprise && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+          <p className="text-purple-800">
+            🏢 Plan Enterprise activo. Disfruta de todas las características corporativas.
           </p>
         </div>
       )}
