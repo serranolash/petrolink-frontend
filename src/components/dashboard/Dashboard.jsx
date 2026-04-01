@@ -5,7 +5,7 @@ import {
     TrendingUp, Camera, PenTool, MapPin, Image, Clock, UserCheck, UserX,
     Navigation, AlertCircle, Globe
 } from 'lucide-react';
-import SignaturePad from '../common/SignaturePad'; // ✅ Importar SignaturePad
+import SignaturePad from '../common/SignaturePad';
 
 const API_BASE_URL = 'https://petrolink-backend-production.up.railway.app/api';
 
@@ -54,6 +54,97 @@ const Dashboard = ({ token, userRole, currentUser }) => {
       fetchData();
     }
   }, [token]);
+
+  // Función para renderizar firmas con ubicación y validación
+  const renderSignature = (signature, title, icon) => {
+    if (!signature) return null;
+    
+    // Verificar si signature es un objeto válido
+    let signatureObj = signature;
+    if (typeof signature === 'string') {
+      try {
+        signatureObj = JSON.parse(signature);
+      } catch (e) {
+        console.error('Error parsing signature:', e);
+        return null;
+      }
+    }
+    
+    return (
+      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+          {icon}
+          {title}
+        </h4>
+        <div className="border rounded-lg p-3 bg-white">
+          <p className="text-sm font-medium">{signatureObj.signerName || 'No especificado'}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {signatureObj.timestamp ? formatDate(signatureObj.timestamp) : 'Fecha no disponible'}
+          </p>
+          
+          {/* Ubicación de la firma */}
+          {signatureObj.location && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <p className="text-xs text-gray-500 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                Ubicación al firmar:
+              </p>
+              <p className="text-xs font-mono">
+                {signatureObj.location.latitude?.toFixed(6)}, {signatureObj.location.longitude?.toFixed(6)}
+              </p>
+              {signatureObj.location.accuracy && (
+                <p className="text-xs text-gray-400">
+                  Precisión: ±{Math.round(signatureObj.location.accuracy)}m
+                </p>
+              )}
+              
+              {/* Validación de geocerca */}
+              {signatureObj.is_within_geofence !== undefined && (
+                <div className={`mt-2 text-xs ${signatureObj.is_within_geofence ? 'text-green-600' : 'text-red-600'}`}>
+                  {signatureObj.is_within_geofence ? (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>✅ Dentro del área de trabajo</span>
+                      {signatureObj.distance_to_work_meters && (
+                        <span className="text-gray-500 ml-1">
+                          (a {Math.round(signatureObj.distance_to_work_meters)}m)
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <XCircle className="w-3 h-3" />
+                      <span>❌ Fuera del área de trabajo</span>
+                      {signatureObj.distance_to_work_meters && (
+                        <span className="text-gray-500 ml-1">
+                          (a {Math.round(signatureObj.distance_to_work_meters)}m)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Imagen de la firma */}
+          {signatureObj.signatureData && (
+            <div className="mt-2 flex justify-center">
+              <img 
+                src={signatureObj.signatureData} 
+                alt={`Firma ${title}`} 
+                className="h-16 object-contain border rounded p-1 bg-gray-50"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML += '<p class="text-xs text-gray-400">(Imagen de firma no disponible)</p>';
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const handleApprove = async () => {
     if (!supervisorSignature) {
@@ -214,7 +305,6 @@ const Dashboard = ({ token, userRole, currentUser }) => {
     );
   }
 
-  // Obtener el nombre del supervisor del permiso seleccionado
   const selectedPermitData = selectedPermitForAction ? permits.find(p => p.id === selectedPermitForAction) : null;
 
   return (
@@ -399,46 +489,18 @@ const Dashboard = ({ token, userRole, currentUser }) => {
                       </div>
                     )}
 
-                    {/* Firma del Técnico */}
-                    {permit.technician_signature && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                          <PenTool className="w-4 h-4" />
-                          Firma del Técnico
-                        </h4>
-                        <div className="border rounded-lg p-3 bg-white">
-                          <p className="text-sm font-medium">{permit.technician_signature.signerName}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatDate(permit.technician_signature.timestamp)}
-                          </p>
-                          {permit.technician_signature.signatureData && (
-                            <div className="mt-2 flex justify-center">
-                              <img src={permit.technician_signature.signatureData} alt="Firma Técnico" className="h-16 object-contain" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    {/* ✅ Firma del Técnico con renderSignature */}
+                    {permit.technician_signature && renderSignature(
+                      permit.technician_signature,
+                      'Firma del Técnico',
+                      <PenTool className="w-4 h-4 text-blue-600" />
                     )}
 
-                    {/* Firma del Supervisor */}
-                    {permit.supervisor_signature && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                          <UserCheck className="w-4 h-4 text-green-600" />
-                          Firma del Supervisor
-                        </h4>
-                        <div className="border rounded-lg p-3 bg-white">
-                          <p className="text-sm font-medium">{permit.supervisor_signature.signerName}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatDate(permit.supervisor_signature.timestamp)}
-                          </p>
-                          {permit.supervisor_signature.signatureData && (
-                            <div className="mt-2 flex justify-center">
-                              <img src={permit.supervisor_signature.signatureData} alt="Firma Supervisor" className="h-16 object-contain" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    {/* ✅ Firma del Supervisor con renderSignature */}
+                    {permit.supervisor_signature && renderSignature(
+                      permit.supervisor_signature,
+                      'Firma del Supervisor',
+                      <UserCheck className="w-4 h-4 text-green-600" />
                     )}
 
                     {/* Fotos */}
@@ -499,7 +561,7 @@ const Dashboard = ({ token, userRole, currentUser }) => {
         )}
       </div>
 
-      {/* ✅ Modal de Aprobación con SignaturePad */}
+      {/* Modal de Aprobación con SignaturePad */}
       {showApproveModal && selectedPermitData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -515,7 +577,7 @@ const Dashboard = ({ token, userRole, currentUser }) => {
               <p><strong>Ubicación:</strong> {selectedPermitData.work_location}</p>
             </div>
             
-            {/* ✅ Componente de firma */}
+            {/* Componente de firma */}
             <SignaturePad
               signerName={currentUser?.full_name || 'Supervisor'}
               signerType="SUPERVISOR"
