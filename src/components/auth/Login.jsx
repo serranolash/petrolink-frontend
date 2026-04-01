@@ -40,8 +40,8 @@ const Login = () => {
         localStorage.setItem('user', JSON.stringify(data.user));
         console.log('✅ Login exitoso, redirigiendo a /app');
         
-        // Redirección inmediata
-        window.location.href = '/app';
+        // Usar navigate de React Router en lugar de window.location
+        navigate('/app');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.response?.data?.error || "Error de conexión";
