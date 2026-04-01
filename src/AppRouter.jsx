@@ -1,6 +1,6 @@
 // client/src/AppRouter.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Home from './pages/Home/Home';
 import Pricing from './pages/Pricing/Pricing';
@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children }) => {
 
 const AppRouter = () => {
   return (
-    <Router>
+    <BrowserRouter> {/* ✅ Solo un Router en toda la app */}
       <Routes>
         {/* Rutas públicas con navbar */}
         <Route path="/" element={
@@ -55,7 +55,7 @@ const AppRouter = () => {
         
         {/* Ruta protegida de la app */}
         <Route 
-          path="/app/*" 
+          path="/app" 
           element={
             <ProtectedRoute>
               <App />
@@ -65,7 +65,7 @@ const AppRouter = () => {
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 };
 

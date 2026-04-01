@@ -39,8 +39,6 @@ const Login = () => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         console.log('✅ Login exitoso, redirigiendo a /app');
-        
-        // Usar navigate de React Router en lugar de window.location
         navigate('/app');
       }
     } catch (err) {
@@ -55,6 +53,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        {/* Header Industrial */}
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 text-center relative">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0" style={{
@@ -74,6 +73,7 @@ const Login = () => {
         </div>
 
         <div className="p-6">
+          {/* Tabs */}
           <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-lg">
             <button
               onClick={() => setIsLogin(true)}
