@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Crown, Users, FileText, CheckCircle, ArrowUpCircle, CreditCard, TrendingUp, MapPin, Wifi, BarChart3 } from 'lucide-react';
+import api from '../../services/api';
 
 const Subscription = ({ token }) => {
   const navigate = useNavigate();
@@ -15,10 +16,10 @@ const Subscription = ({ token }) => {
 
   const fetchSubscription = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/subscription/plan', {
+      const response = await api.get('/subscription/plan', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         setSubscription(data.subscription);
       }
@@ -32,15 +33,11 @@ const Subscription = ({ token }) => {
   const handleUpgrade = async (plan) => {
     setUpgrading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/subscription/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ plan })
-      });
-      const data = await response.json();
+      const response = await api.post('/subscription/upgrade', 
+        { plan },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      const data = response.data;
       if (data.success) {
         fetchSubscription();
         alert(`¡Plan actualizado a ${data.subscription.plan_name}!`);
@@ -48,7 +45,8 @@ const Subscription = ({ token }) => {
         alert(data.error || 'Error al actualizar');
       }
     } catch (error) {
-      alert('Error al actualizar el plan');
+      console.error('Error upgrading plan:', error);
+      alert('Error al actualizar el plan. Contacta a soporte.');
     } finally {
       setUpgrading(false);
     }
@@ -74,8 +72,8 @@ const Subscription = ({ token }) => {
     return <div className="text-center py-8">Cargando información de suscripción...</div>;
   }
 
-  const isBusiness = subscription?.plan === 'business';
   const isStarter = subscription?.plan === 'starter';
+  const isBusiness = subscription?.plan === 'business';
   const isEnterprise = subscription?.plan === 'enterprise';
 
   return (
@@ -89,6 +87,9 @@ const Subscription = ({ token }) => {
               <p className="text-slate-300 mt-1">
                 {subscription.company_name}
               </p>
+              {typeof subscription.price === 'number' && (
+                <p className="text-cyan-400 text-sm mt-1">${subscription.price}/mes</p>
+              )}
             </div>
             <Crown className="w-12 h-12 text-yellow-400" />
           </div>
@@ -143,7 +144,7 @@ const Subscription = ({ token }) => {
         </div>
       </div>
 
-      {/* Upgrade Options */}
+      {/* Upgrade Options - Para Starter */}
       {isStarter && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -166,7 +167,7 @@ const Subscription = ({ token }) => {
               <button
                 onClick={() => handleUpgrade('business')}
                 disabled={upgrading}
-                className="mt-4 w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition"
+                className="mt-4 w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition disabled:opacity-50"
               >
                 {upgrading ? 'Procesando...' : 'Actualizar a Business'}
               </button>
@@ -193,18 +194,40 @@ const Subscription = ({ token }) => {
         </div>
       )}
       
+      {/* Upgrade Options - Para Business */}
       {isBusiness && (
-        <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4 text-center">
-          <p className="text-cyan-800">
-            🎉 ¡Disfruta de tu plan Business! Tienes acceso a todas las características premium.
-          </p>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <ArrowUpCircle className="w-6 h-6 text-purple-600" />
+            ¿Necesitas más?
+          </h3>
+          <div className="border rounded-lg p-4 hover:shadow-md transition">
+            <h4 className="text-lg font-bold text-purple-600">Enterprise</h4>
+            <p className="text-2xl font-bold mt-2">Personalizado</p>
+            <ul className="mt-3 space-y-1 text-sm">
+              <li>✓ Usuarios ilimitados</li>
+              <li>✓ Permisos ilimitados</li>
+              <li>✓ Firma legal/gubernamental</li>
+              <li>✓ Integración ERP (SAP)</li>
+              <li>✓ Auditoría para entes reguladores</li>
+              <li>✓ Gerente de cuenta 24/7</li>
+            </ul>
+            <button
+              onClick={() => navigate('/contact')}
+              className="mt-4 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition"
+            >
+              Contactar Ventas
+            </button>
+          </div>
         </div>
       )}
       
+      {/* Mensaje para Enterprise */}
       {isEnterprise && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
           <p className="text-purple-800">
             🏢 Plan Enterprise activo. Disfruta de todas las características corporativas.
+            Para soporte personalizado, contacta a tu gerente de cuenta.
           </p>
         </div>
       )}
