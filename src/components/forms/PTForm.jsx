@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, FileText, CheckCircle, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import { Shield, FileText, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import SignaturePad from '../common/SignaturePad';
 import PhotoEvidence from '../common/PhotoEvidence';
-import API_URL from '../../config/api';
+import api from '../../services/api';
 import WorkLocationSelector from '../common/WorkLocationSelector';
 
 const RISK_TYPES = [
@@ -46,6 +46,7 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
   const [technicianSignature, setTechnicianSignature] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [workLocationData, setWorkLocationData] = useState(null);
+  const [tempPermitId, setTempPermitId] = useState(null);
 
   // Si es técnico, pre-llenar el nombre y deshabilitar el campo
   const isTechnician = userRole === 'technician';
@@ -56,7 +57,22 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
     if (isTechnician && currentUser?.full_name) {
       setTechnicianName(currentUser.full_name);
     }
+    // Generar un ID temporal para la firma mientras se crea el permiso
+    setTempPermitId('temp_' + Date.now());
   }, [isTechnician, currentUser]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const checkSafety = () => {
     if (!selectedRisk) return false;
@@ -92,38 +108,34 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
   };
 
   const handleBack = () => setCurrentStep(currentStep - 1);
-  const handleTechnicianSignature = (data) => setTechnicianSignature(data);
+  
+  const handleSignatureSave = (type, data) => {
+    if (type === 'technician') {
+      setTechnicianSignature(data);
+    }
+  };
+
   const handlePhotoCapture = (photo) => setPhotos(prev => [...prev, photo]);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/permits`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          risk_type: selectedRisk,
-          safety_checks: safetyChecks,
-          technician_name: technicianName,
-          supervisor_name: supervisorName,
-          work_location: workLocation,
-          work_description: workDescription,
-          technician_signature: technicianSignature,
-          photos: photos.map(p => ({ id: p.id, data: p.data })),
-          locationData: workLocationData  // ✅ Enviar datos de ubicación
-        })
+      // ✅ Usar api en lugar de fetch
+      const response = await api.post('/permits', {
+        risk_type: selectedRisk,
+        safety_checks: safetyChecks,
+        technician_name: technicianName,
+        supervisor_name: supervisorName,
+        work_location: workLocation,
+        work_description: workDescription,
+        technician_signature: technicianSignature,
+        photos: photos.map(p => ({ id: p.id, data: p.data })),
+        locationData: workLocationData
       });
       
-      const data = await response.json();
+      const data = response.data;
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al crear permiso');
-      }
-      
-      // Generar PDF básico
+      // Generar PDF
       if (data.pdf) {
         const link = document.createElement('a');
         link.href = 'data:application/pdf;base64,' + data.pdf;
@@ -133,6 +145,7 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
       
       onSubmitSuccess?.(data);
       
+      // Resetear formulario
       setSelectedRisk(null);
       setSafetyChecks({});
       setTechnicianName(isTechnician ? currentUser?.full_name || '' : '');
@@ -142,7 +155,9 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
       setSafetyMessage(null);
       setTechnicianSignature(null);
       setPhotos([]);
+      setWorkLocationData(null);
       setCurrentStep(1);
+      setTempPermitId('temp_' + Date.now());
       
       alert(data.requiresApproval 
         ? '✅ Solicitud de permiso enviada. Espera aprobación del supervisor.'
@@ -150,7 +165,7 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
       
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al generar el permiso: ' + error.message);
+      alert('Error al generar el permiso: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -239,15 +254,24 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
           )}
           
           {currentStep === 3 && (
-            <PhotoEvidence onPhotoCaptured={handlePhotoCapture} required={true} maxPhotos={3} />
+            <PhotoEvidence 
+              onPhotoCaptured={handlePhotoCapture} 
+              required={true} 
+              maxPhotos={3}
+              token={token}
+            />
           )}
           
           {currentStep === 4 && (
             <div className="space-y-6">
               <SignaturePad
+                token={token}
                 signerName={technicianName || 'Técnico'}
                 signerType="TECHNICIAN"
-                onSave={handleTechnicianSignature}
+                onSave={(data) => handleSignatureSave('technician', data)}
+                workLocationCoords={workLocationData?.coordinates || null}
+                workRadius={workLocationData?.radius || 100}
+                permitId={tempPermitId}
               />
             </div>
           )}
@@ -292,11 +316,31 @@ const PTForm = ({ onSubmitSuccess, token, userRole, currentUser }) => {
           )}
           
           <div className="flex gap-3 mt-8">
-            {currentStep > 1 && <button onClick={handleBack} className="flex-1 py-3 border rounded-lg">← Atrás</button>}
+            {currentStep > 1 && (
+              <button 
+                onClick={handleBack} 
+                className="flex-1 py-3 border rounded-lg hover:bg-gray-50 transition"
+              >
+                ← Atrás
+              </button>
+            )}
             {currentStep < 5 ? (
-              <button onClick={handleNext} className="flex-1 bg-green-600 text-white py-3 rounded-lg">Continuar →</button>
+              <button 
+                onClick={handleNext} 
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
+              >
+                Continuar →
+              </button>
             ) : (
-              <button onClick={handleSubmit} disabled={loading} className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 ${safetyMessage?.includes('NO SEGURO') ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 text-white'}`}>
+              <button 
+                onClick={handleSubmit} 
+                disabled={loading || safetyMessage?.includes('NO SEGURO')} 
+                className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition ${
+                  safetyMessage?.includes('NO SEGURO') 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
                 <FileText className="w-5 h-5" />
                 {loading ? 'Enviando...' : (isTechnician ? 'Solicitar Permiso' : 'Generar Permiso')}
               </button>

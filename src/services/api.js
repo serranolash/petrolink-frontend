@@ -1,13 +1,37 @@
-﻿import axios from 'axios';
-
-// Usamos la URL de Railway directamente para producción
-const API_BASE_URL = 'https://petrolink-backend-production.up.railway.app/api';
+﻿// client/src/services/api.js
+import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const api = axios.create({
-  baseURL: API_BASE_URL, 
-  headers: {
-    'Content-Type': 'application/json',
-  },
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
+
+// Interceptor para agregar token
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Interceptor para manejar errores de autenticación
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default api;

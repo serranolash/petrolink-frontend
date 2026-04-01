@@ -1,5 +1,6 @@
 // client/src/components/dashboard/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 import { 
     BarChart3, CheckCircle, XCircle, FileText, RefreshCw, Calendar, 
     TrendingUp, Camera, PenTool, MapPin, Image, Clock, UserCheck, UserX,
@@ -24,27 +25,18 @@ const Dashboard = ({ token, userRole }) => {
     
     setLoading(true);
     try {
-      const statsResponse = await fetch('/api/dashboard/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const statsData = await statsResponse.json();
-      if (statsData.success) {
-        setStats(statsData.data);
-      }
-
-      const permitsResponse = await fetch('/api/permits', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const permitsData = await permitsResponse.json();
-      if (permitsData.success) {
-        setPermits(permitsData.permits || []);
-      }
+        // ✅ Usar api en lugar de fetch
+        const statsResponse = await api.get('/dashboard/stats');
+        setStats(statsResponse.data.data);
+        
+        const permitsResponse = await api.get('/permits');
+        setPermits(permitsResponse.data.permits);
     } catch (error) {
-      console.error('Error fetching data:', error);
+        console.error('Error fetching data:', error);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   useEffect(() => {
     if (token) {
