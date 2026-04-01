@@ -12,9 +12,16 @@ import PaymentFailure from './pages/PaymentFailure';
 import PaymentPending from './pages/PaymentPending';
 import PaymentSimulator from './pages/PaymentSimulator';
 
-const AppRouter = () => {
+// Componente para rutas protegidas
+const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('token');
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
 
+const AppRouter = () => {
   return (
     <Router>
       <Routes>
@@ -38,7 +45,7 @@ const AppRouter = () => {
           </>
         } />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Login />} /> {/* ✅ Redirige al mismo login pero con pestaña registro activa? - Necesitarás pasar props */}
+        <Route path="/register" element={<Login />} />
         
         {/* Rutas de pago */}
         <Route path="/payment/success" element={<PaymentSuccess />} />
@@ -49,7 +56,11 @@ const AppRouter = () => {
         {/* Ruta protegida de la app */}
         <Route 
           path="/app/*" 
-          element={isAuthenticated ? <App /> : <Navigate to="/login" replace />} 
+          element={
+            <ProtectedRoute>
+              <App />
+            </ProtectedRoute>
+          } 
         />
         
         <Route path="*" element={<Navigate to="/" />} />

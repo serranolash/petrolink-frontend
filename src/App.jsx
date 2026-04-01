@@ -1,3 +1,4 @@
+// client/src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PTForm from './components/forms/PTForm';
@@ -20,6 +21,7 @@ function App() {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
     } else {
+      // Si no hay token, redirigir al login
       navigate('/login');
     }
   }, [navigate]);
@@ -38,7 +40,7 @@ function App() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
       </div>
     );
   }
