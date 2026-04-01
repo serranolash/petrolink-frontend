@@ -1,6 +1,6 @@
 // client/src/pages/Home/Home.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Shield, 
   FileCheck, 
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const features = [
@@ -63,6 +64,18 @@ const Home = () => {
     { value: '24/7', label: 'Disponibilidad total', icon: <Globe className="w-5 h-5" /> }
   ];
 
+  const handleRegister = () => {
+    navigate('/register');
+  };
+
+  const handlePricing = () => {
+    navigate('/pricing');
+  };
+
+  const handleContact = () => {
+    navigate('/contact');
+  };
+
   return (
     <div className="bg-slate-50">
       {/* Hero Section - Estilo industrial */}
@@ -92,18 +105,18 @@ const Home = () => {
                 en la industria energética de LATAM.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/register"
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 text-center"
+                <button
+                  onClick={handleRegister}
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 text-center cursor-pointer"
                 >
                   Comenzar Prueba Gratis
-                </Link>
-                <Link
-                  to="/pricing"
-                  className="border-2 border-slate-600 hover:border-cyan-500 text-slate-300 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all text-center"
+                </button>
+                <button
+                  onClick={handlePricing}
+                  className="border-2 border-slate-600 hover:border-cyan-500 text-slate-300 hover:text-white px-8 py-3 rounded-lg font-semibold transition-all text-center cursor-pointer"
                 >
                   Ver Planes
-                </Link>
+                </button>
               </div>
             </div>
             <div className="hidden md:block">
@@ -188,13 +201,13 @@ Timestamp: 2024-03-31T12:00:00Z`}</code>
           <p className="text-lg text-slate-300 mb-8">
             Más de 50 empresas en LATAM utilizan Energy-Compliance
           </p>
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
+          <button
+            onClick={handleRegister}
+            className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 cursor-pointer"
           >
             Solicitar Demo Gratuita
             <ChevronRight className="w-5 h-5" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>

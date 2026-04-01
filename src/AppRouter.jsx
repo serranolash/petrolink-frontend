@@ -1,3 +1,4 @@
+// client/src/AppRouter.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
@@ -13,13 +14,11 @@ import PaymentSimulator from './pages/PaymentSimulator';
 
 const AppRouter = () => {
   const isAuthenticated = localStorage.getItem('token');
-  
-  console.log('AppRouter - isAuthenticated:', !!isAuthenticated);
 
   return (
     <Router>
       <Routes>
-        {/* Rutas pÃºblicas con navbar */}
+        {/* Rutas públicas con navbar */}
         <Route path="/" element={
           <>
             <Navbar />
@@ -39,10 +38,10 @@ const AppRouter = () => {
           </>
         } />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Login />} /> {/* ✅ Redirige al mismo login pero con pestaña registro activa? - Necesitarás pasar props */}
         
         {/* Rutas de pago */}
         <Route path="/payment/success" element={<PaymentSuccess />} />
-        <Route path="/payment/simulator" element={<PaymentSimulator />} />
         <Route path="/payment/failure" element={<PaymentFailure />} />
         <Route path="/payment/pending" element={<PaymentPending />} />
         <Route path="/payment/simulator" element={<PaymentSimulator />} />
