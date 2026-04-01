@@ -190,37 +190,44 @@ const Dashboard = ({ token, userRole, currentUser }) => {
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      alert('Por favor ingresa un motivo de rechazo');
-      return;
+        alert('Por favor ingresa un motivo de rechazo');
+        return;
     }
     
     setProcessingAction(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/permits/${selectedPermitForAction}/approve`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          action: 'reject',
-          rejection_reason: rejectionReason 
-        })
-      });
-      const data = await response.json();
-      if (data.success) {
-        fetchData();
-        setShowRejectModal(false);
-        setRejectionReason('');
-        setSelectedPermitForAction(null);
-        alert('Permiso rechazado');
-      } else {
-        alert(data.error || 'Error al rechazar');
-      }
+        const response = await fetch(`${API_BASE_URL}/permits/${selectedPermitForAction}/approve`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                action: 'reject',
+                rejection_reason: rejectionReason 
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            // ✅ DESCARGAR PDF DE RECHAZO
+            if (data.pdf) {
+                const link = document.createElement('a');
+                link.href = 'data:application/pdf;base64,' + data.pdf;
+                link.download = 'permiso-rechazado-' + data.permit.permit_number + '.pdf';
+                link.click();
+            }
+            fetchData();
+            setShowRejectModal(false);
+            setRejectionReason('');
+            setSelectedPermitForAction(null);
+            alert('Permiso rechazado');
+        } else {
+            alert(data.error || 'Error al rechazar');
+        }
     } catch (error) {
-      alert('Error al rechazar el permiso');
+        alert('Error al rechazar el permiso');
     } finally {
-      setProcessingAction(false);
+        setProcessingAction(false);
     }
   };
 
@@ -282,6 +289,27 @@ const Dashboard = ({ token, userRole, currentUser }) => {
   };
 
   const canApprove = (userRole === 'admin' || userRole === 'supervisor');
+
+  const getRejectionReasonDisplay = (permit) => {
+    if (permit.status !== 'REJECTED') return null;
+    
+    return (
+        <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+            <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-red-800">
+                <XCircle className="w-4 h-4" />
+                Motivo del Rechazo
+            </h4>
+            <div className="bg-white rounded-lg p-3 border border-red-100">
+                <p className="text-sm text-red-700">{permit.rejection_reason || 'No se especificó motivo'}</p>
+                {permit.rejected_by_name && (
+                    <p className="text-xs text-gray-500 mt-2">
+                        Rechazado por: {permit.rejected_by_name} el {formatDate(permit.rejected_at)}
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+  };
 
   if (!token) {
     return (
@@ -503,6 +531,9 @@ const Dashboard = ({ token, userRole, currentUser }) => {
                       <UserCheck className="w-4 h-4 text-green-600" />
                     )}
 
+                    {/* Motivo de rechazo */}
+                    {permit.status === 'REJECTED' && getRejectionReasonDisplay(permit)}
+
                     {/* Fotos */}
                     {permit.photos && permit.photos.length > 0 && (
                       <div className="mt-4 p-3 bg-gray-50 rounded-lg">
@@ -524,7 +555,7 @@ const Dashboard = ({ token, userRole, currentUser }) => {
                       </div>
                     )}
 
-                    {/* Botones de aprobación */}
+                    {/* Botones de aprobación - solo para pendientes */}
                     {canApprove && permit.status === 'PENDING' && (
                       <div className="mt-4 flex gap-3">
                         <button

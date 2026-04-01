@@ -89,10 +89,10 @@ const SignaturePad = ({ onSave, signerName, signerType, disabled, workLocationCo
     const validateLocationWithServer = async () => {
         if (!location) return false;
         
-        // Si no hay geocerca configurada, no validar
         if (!workLocationCoords || !workLocationCoords.latitude) {
             setValidation({
                 valid: true,
+                distance: 0,
                 message: '⚠️ Sin geocerca configurada - no se valida ubicación',
                 canSign: true
             });
@@ -108,7 +108,7 @@ const SignaturePad = ({ onSave, signerName, signerType, disabled, workLocationCo
                 const validationData = result.validation;
                 setValidation({
                     valid: validationData.within_geofence,
-                    distance: validationData.distance_meters,
+                    distance: validationData.distance_meters,  // ← GUARDA LA DISTANCIA
                     message: validationData.message,
                     canSign: validationData.within_geofence
                 });
@@ -126,7 +126,7 @@ const SignaturePad = ({ onSave, signerName, signerType, disabled, workLocationCo
                 
                 setValidation({
                     valid: isValid,
-                    distance: distance,
+                    distance: distance,  // ← GUARDA LA DISTANCIA
                     message: isValid 
                         ? `✅ Dentro del área (${Math.round(distance)}m, tolerancia ${Math.round(effectiveRadius)}m)`
                         : `❌ Fuera del área (${Math.round(distance)}m, máximo permitido ${Math.round(effectiveRadius)}m)`,
@@ -148,7 +148,7 @@ const SignaturePad = ({ onSave, signerName, signerType, disabled, workLocationCo
             
             setValidation({
                 valid: isValid,
-                distance: distance,
+                distance: distance,  // ← GUARDA LA DISTANCIA
                 message: isValid 
                     ? `✅ Dentro del área (${Math.round(distance)}m, tolerancia ${Math.round(effectiveRadius)}m)`
                     : `❌ Fuera del área (${Math.round(distance)}m, máximo permitido ${Math.round(effectiveRadius)}m)`,
@@ -252,18 +252,26 @@ const SignaturePad = ({ onSave, signerName, signerType, disabled, workLocationCo
     };
 
     const saveSignature = () => {
+        // Crear el objeto en el formato que espera el backend
         const signaturePayload = {
-            signatureData,
-            signerName,
-            signerType,
+            signatureData: signatureData,  // La imagen
+            signerName: signerName,
+            signerType: signerType,
+            timestamp: new Date().toISOString(),
             location: location || null,
-            validation: validation ? {
-                within: validation.valid,
-                distance: validation.distance,
-                effective_radius: workRadius + (location?.accuracy || 0)
-            } : null,
+            // Agregar los campos de validación DIRECTAMENTE en el objeto principal
+            is_within_geofence: validation ? validation.valid : null,
+            distance_to_work_meters: validation ? validation.distance : null,
             timestamp: new Date().toISOString()
         };
+        
+        // Log para depurar
+        console.log('💾 Guardando firma:', {
+            tieneImagen: !!signatureData,
+            tamanoImagen: signatureData?.length,
+            ubicacion: !!location,
+            dentroGeocerca: validation?.valid
+        });
         
         onSave(signaturePayload);
         setSaved(true);
